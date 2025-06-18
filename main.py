@@ -1,60 +1,54 @@
 import requests
-import time
+import json
+from datetime import datetime, timedelta
 
-HELIUS_API_KEY = "8972cb18-5421-40bd-88f1-07192a1f3cbd"
+def get_first_transaction_enhanced(address, api_key, before_signature=None):
+    """
+    Use Helius Enhanced Transactions API for better parsing
+    """
+    base_url = f"https://api.helius.xyz/v0/addresses/{address}/transactions?api-key={api_key}"
+    
+    all_transactions = []
+    
+    while True:
+        url = base_url
+        if before_signature:
+            url += f"&before={before_signature}"
+        
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            transactions = response.json()
+            
+            if not transactions:
+                break
+                
+            all_transactions.extend(transactions)
+            before_signature = transactions[-1]["signature"]
+            
+            print(f"Fetched {len(transactions)} transactions, total: {len(all_transactions)}")
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            break
+    
+    if all_transactions:
+        # The last transaction is the oldest (first)
+        first_transaction = all_transactions[-1]
+        print(f"First transaction: {first_transaction['signature']}")
+        print(f"Description: {first_transaction.get('description', 'N/A')}")
+        print(f"Timestamp: {datetime.fromtimestamp(first_transaction['timestamp']) if first_transaction.get('timestamp') else 'N/A'}")
+        return first_transaction
+    
+    return None
 
+# Test the token address
+API_KEY = "8972cb18-5421-40bd-88f1-07192a1f3cbd"
 token_address = "8Y5MwnUM19uqhnsrFnKijrmn33CmHBTUoedXtTGDpump"
-limit = 10
-
-def get_token_transactions(token_address, limit=50):
-    url = f"https://api.helius.xyz/v0/addresses/{token_address}/transactions/?api-key={HELIUS_API_KEY}"
-    params = {
-        "api-key": HELIUS_API_KEY,
-        "limit": limit
-    }
-    resp = requests.get(url, params=params)
-    if resp.status_code != 200:
-        print(f"Error: {resp.status_code} - {resp.text}")
-        return []
-    
-    all_txs = resp.json()
-    
-    # Filter transactions that include tokenTransfers for this token
-    filtered_txs = []
-    for tx in all_txs:
-        token_transfers = tx.get("tokenTransfers", [])
-        # Keep tx if any tokenTransfer's mint matches the token_address
-        if any(t.get("mint") == token_address for t in token_transfers):
-            filtered_txs.append(tx)
-    
-    return filtered_txs
+signature = "2yUiLg4NvXbfSco8etYS4QJVRvoqxmDDQjpb2naaZuXU2A5WGEPVTgAcDTW9J7KDLt9PQ2SnA79D7i5cuYY2rBbH"
+# Usage
+result = get_first_transaction_enhanced(token_address, API_KEY, signature)
 
 
 
-def display_transaction(data):
-    print(f"Description: {data.get('description', '')}")
-    print(f"Type: {data.get('type', '')}")
-    print(f"Source: {data.get('source', '')}")
-    print(f"Fee: {data.get('fee', '')}")
-    print(f"Fee Payer: {data.get('feePayer', '')}")
-    print(f"Slot: {data.get('slot', '')}")
-    print(f"Timestamp: {data.get('timestamp', '')}")
-    print()
-
-    token_transfers = data.get('tokenTransfers', [])
-    print(f"Token Transfers ({len(token_transfers)}):")
-    for i, transfer in enumerate(token_transfers, 1):
-        print(f"  Transfer #{i}:")
-        print(f"    From Token Account: {transfer.get('fromTokenAccount', '')}")
-        print(f"    To Token Account:   {transfer.get('toTokenAccount', '')}")
-        print(f"    From User Account:  {transfer.get('fromUserAccount', '')}")
-        print(f"    To User Account:    {transfer.get('toUserAccount', '')}")
-        print(f"    Token Amount:       {transfer.get('tokenAmount', '')}")
-        print(f"    Mint:               {transfer.get('mint', '')}")
-        print(f"    Token Standard:     {transfer.get('tokenStandard', '')}")
-        print()
-
-txs = get_token_transactions(token_address, limit)
-print(f"Fetched {len(txs)} transactions")
-for tx in txs:
-    display_transaction(tx)
+# I can get the oldest transaction but at the moment its manual i need to find a top trader from bullx or some other way of getting an old signature and supply that to the params
