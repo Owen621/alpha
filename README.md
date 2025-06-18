@@ -1,13 +1,38 @@
 # alpha
 
-Plan next steps:
+Finds early transactions based on unix time on launch and token address both manually provided
 
-Get manually from solscan large tokens first mint (can be automated later)
+Filters out failed transactions and minimum sol exchanged filter
 
-from this, go forward however many transactions and find wallets that bought early
+Takes a while since it checks 100s of blocks for high volume tokens, however it uses minimal helius credits at the moment so its not a problem
 
-go forward a certain amount, to ensure they arent just instantly dumping and are holding a reasonable time
+Next steps:
 
-record these wallets a track if a wallet is early in multiple successful tokens
+automate fetching high volume recent tokens
 
-test
+at some point in order to reduce processing time, the transaction checking needs to be ran in parallel for all tokens potentially using ThreadPoolExecutor
+
+calculate profit from these early buyers up to a "profit assessment point" at which point calculate unrealized profit and tag as a HODLER
+
+store data on wallets in sqlite such as:
+Tokens (metadata, launch time)
+Wallets + activity logs (transactions, timestamps, PnL)
+Wallet scores and tags (Hodler, Flipper, Whale, etc.)
+
+classify wallets
+
+introduce smart wallet history on stored wallets (check if lucky or degen sprayer)
+pull its SPL transaction history and score eg:
+For Wallet X:
+- 12 tokens entered early
+- 4 successful (>5x)
+- 8 failed/rugged
+- Hit Rate: 33%
+- Avg ROI: 2.4x
+tag these wallets now eg:
+- Sniper: >40% hit rate, >3x avg ROI
+- Sprayer: <20% hit rate, high volume
+- Insider: Appears only in high-win tokens, but low frequency
+- Luck: 1 big hit, otherwise losses
+Only check history from a certain window of time, i need to know whos winning now not who won 2 years ago
+
