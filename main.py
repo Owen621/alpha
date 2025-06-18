@@ -156,14 +156,22 @@ class SolanaBlockFinder:
             
             for tx in transactions:
                 if self.transaction_involves_token(tx, token_mint):
+                    
                     meta = tx.get('meta', {})
                     if not meta or meta.get('err') is not None:
                         continue  # Skip failed transactions
+
                     sol_moved = extract_main_wallet_sol_change(tx)
                     if sol_moved < MIN_SOL_AMOUNT:
                         continue
+
+                    signature = tx.get('transaction', {}).get('signatures', [None])[0]
+                    if not signature:
+                        # Skip transactions with no signature
+                        continue
+
                     tx_info = {
-                        'signature': tx.get('transaction', {}).get('signatures', [None])[0],
+                        'signature': signature,
                         'slot': slot,
                         'blockTime': tx.get('blockTime'),
                         'transaction': tx
