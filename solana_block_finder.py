@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 from typing import List, Dict, Optional, Any
+import time
 
 class SolanaBlockFinder:
     def __init__(self, rpc_url: str):
@@ -70,6 +71,8 @@ class SolanaBlockFinder:
                 start_slot = mid_slot + 1
             else:
                 end_slot = mid_slot - 1
+
+            
         
         print(f"Best match: Slot {best_slot} with {best_diff}s difference")
         return best_slot

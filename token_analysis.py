@@ -25,7 +25,7 @@ class TokenAnalyzer:
         token_transactions = []
         for i, slot in enumerate(blocks):
             if i % 100 == 0:
-                print(f"Checking block {i+1}/{len(blocks)} (slot {slot})")
+                print(f"Checking block {i+1}/{len(blocks)} (slot {slot}) (token {self.token_mint})")
             
             block_time = self.block_finder.get_block_time(slot)
             transactions = self.block_finder.get_block_transactions(slot)
@@ -55,7 +55,7 @@ class TokenAnalyzer:
                         'wallet': user_wallet
                     }
                     token_transactions.append(tx_info)
-                    print(f"Found token transaction: {tx_info['signature']} at slot {slot}")
+                    #print(f"Found token transaction: {tx_info['signature']} at slot {slot}")
         return token_transactions
 
 
