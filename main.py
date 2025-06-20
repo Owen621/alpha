@@ -1,12 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from token_analysis import TokenAnalyzer
 from constants import HELIUS_API_KEY, QUICKNODE_URL, MIN_SOL_AMOUNT
-from datetime import datetime
 from pnl_calculator import PnLCalculator
-from models import TokenBuy
 from utils import export_results_to_csv
-
-
 
 def analyze_token(token_mint: str, launch_time: int, window_hours: float, url: str, sell_window: float):
     analyzer = TokenAnalyzer(url, token_mint, MIN_SOL_AMOUNT)
@@ -30,11 +26,12 @@ def analyze_token(token_mint: str, launch_time: int, window_hours: float, url: s
 if __name__ == "__main__":
     tokens_to_analyze = [
         ("8Y5MwnUM19uqhnsrFnKijrmn33CmHBTUoedXtTGDpump", 1750204740, QUICKNODE_URL),
+        ("8Q8KPBL21FVatn2C1EaxAQSorAkHW2W2jDUXapVPZmhm", 1750396860, QUICKNODE_URL),
         ("71Jvq4Epe2FCJ7JFSF7jLXdNk1Wy4Bhqd9iL6bEFELvg", 1750287011, f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
         ("2KdMNf6tEQ9MWjvDFk9jKtcuTjKoipibCTqB9vtBpump", 1750292351, f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
     ]
-    window_hours = 0.01
-    sell_window = 0.05
+    window_hours = 0.02
+    sell_window = 0.12
     total_results = []
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [

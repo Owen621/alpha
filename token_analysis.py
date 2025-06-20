@@ -48,19 +48,20 @@ class TokenAnalyzer:
                         # Skip transactions with no signature
                         continue
                    
-                    buy = TokenBuy(
-                        wallet=user_wallet,
-                        token_mint=self.token_mint,
-                        token_amount=amount,
-                        sol_spent=sol_moved,
-                        block_time=block_time,
-                        signature=signature
-                    )
-                    token_transactions.append(buy)
-                    if len(token_transactions) >= 10:
+                    if user_wallet not in [t.wallet for t in token_transactions]:
+                        buy = TokenBuy(
+                            wallet=user_wallet,
+                            token_mint=self.token_mint,
+                            token_amount=amount,
+                            sol_spent=sol_moved,
+                            block_time=block_time,
+                            signature=signature
+                        )
+                        token_transactions.append(buy)
+                    if len(token_transactions) >= 15:
                         break
                     #print(f"Found token transaction: {tx_info['signature']} at slot {slot}")
-            if len(token_transactions) >= 10:
+            if len(token_transactions) >= 15:
                 break
         return token_transactions
 

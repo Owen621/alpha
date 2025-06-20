@@ -27,7 +27,48 @@ def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, v
     if verbose:
         print(f"Results exported to {filename}")
 
-
+def extract_main_wallet_sol_change_enhanced(tx: Dict) -> float:
+    """
+    Extract SOL balance change for the main wallet from Enhanced API transaction.
+    
+    Enhanced API transactions have a different structure:
+    - accountData array with nativeBalanceChange for each account
+    - nativeTransfers array with transfer details
+    - The main wallet is typically the feePayer
+    
+    Args:
+        tx: Enhanced API transaction dictionary
+        
+    Returns:
+        float: SOL change amount (positive for received, negative for sent)
+    """
+    try:
+        # Get the fee payer (main wallet) address
+        fee_payer = tx.get('feePayer')
+        if not fee_payer:
+            print("No feePayer found in transaction")
+            return 0.0
+        
+        # Look for the main wallet in accountData
+        account_data = tx.get('accountData', [])
+        if not account_data:
+            print("No accountData found in transaction")
+            return 0.0
+        
+        # Find the main wallet's balance change
+        for account in account_data:
+            if account.get('account') == fee_payer:
+                native_balance_change = account.get('nativeBalanceChange', 0)
+                # Convert from lamports to SOL
+                sol_change = native_balance_change / 1e9
+                return sol_change
+        
+        print(f"Main wallet {fee_payer} not found in accountData")
+        return 0.0
+        
+    except Exception as e:
+        print(f"Error in Enhanced SOL change calc: {e}")
+        return 0.0
 
 def extract_main_wallet_sol_change(tx: Dict) -> float:
     try:
@@ -74,15 +115,3 @@ def get_transaction_fee_payer(transaction: Dict) -> str:
     except Exception as e:
         print(f"Error getting fee payer: {e}")
         return ''
-
-def calculate_pnl(buy, sell):
-    if not sell:
-        return {"roi": "N/A", "duration": "N/A", "status": "HODLing"}
-
-    roi = (sell["price"] - buy.price) / buy.price * 100
-    duration = (sell["timestamp"] - buy.timestamp).total_seconds() / 3600  # in hours
-    return {
-        "roi": round(roi, 2),
-        "duration": round(duration, 2),
-        "status": "Sold"
-    }

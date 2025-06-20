@@ -4,6 +4,7 @@ from typing import List, Dict
 from constants import HELIUS_API_KEY
 from collections import deque
 import time
+from utils import extract_main_wallet_sol_change_enhanced
 
 class PnLCalculator:
     def __init__(self):
@@ -87,7 +88,6 @@ class PnLCalculator:
                 if tx.get("type") != "SWAP":
                     continue
                     
-                # Process your token transfers here (same logic as before)
                 token_transfers = tx.get("tokenTransfers", [])
                 signature = tx.get("signature")
                 timestamp = tx.get("timestamp")
@@ -98,12 +98,7 @@ class PnLCalculator:
                         
                         token_amount = transfer.get("tokenAmount", 0)
                         
-                        # Calculate SOL spent from native transfers
-                        sol_spent = 0
-                        native_transfers = tx.get("nativeTransfers", [])
-                        for native_transfer in native_transfers:
-                            if native_transfer.get("fromUserAccount") == wallet:
-                                sol_spent += native_transfer.get("amount", 0)
+                        sol_spent = abs(extract_main_wallet_sol_change_enhanced(tx))
                         
                         buys.append(TokenBuy(
                             wallet=wallet,
@@ -194,7 +189,6 @@ class PnLCalculator:
                 if tx.get("type") != "SWAP":
                     continue
                     
-                # Process your token transfers here
                 token_transfers = tx.get("tokenTransfers", [])
                 signature = tx.get("signature")
                 timestamp = tx.get("timestamp")
@@ -206,12 +200,7 @@ class PnLCalculator:
                         # This is a sell (token leaving the wallet)
                         amount = transfer.get("tokenAmount", 0)
                         
-                        # Calculate SOL received from native transfers
-                        sol_received = 0
-                        native_transfers = tx.get("nativeTransfers", [])
-                        for native_transfer in native_transfers:
-                            if native_transfer.get("toUserAccount") == wallet:
-                                sol_received += native_transfer.get("amount", 0) / 1e9  # Convert lamports to SOL
+                        sol_received = extract_main_wallet_sol_change_enhanced(tx)
                         
                         sells.append({
                             "wallet": wallet,
@@ -230,90 +219,79 @@ class PnLCalculator:
 
 
     def match_buys_to_sells(self, buys: List[TokenBuy], sells: List[Dict]) -> List[Dict]:
-        """Match buys to sells and calculate PnL for each wallet-token combo"""
         if not buys:
             return []
+
         token_mint = buys[0].token_mint
         results = []
         wallets = set(buy.wallet for buy in buys)
 
         for wallet in wallets:
-            wallet_buys = sorted(
-                [b for b in buys if b.wallet == wallet],
-                key=lambda x: x.block_time
-            )
+            wallet_buys = sorted([b for b in buys if b.wallet == wallet], key=lambda x: x.block_time)
+            wallet_sells = sorted([s for s in sells if s["wallet"] == wallet], key=lambda x: x["block_time"])
+
+            # Init remaining amount per buy
             for b in wallet_buys:
                 b.remaining_amount = b.token_amount
 
             buys_queue = deque(wallet_buys)
-            total_cost = 0.0
-            total_tokens = 0.0
-            realized_sol = 0.0
             total_tokens_sold = 0.0
-
-            wallet_sells = sorted(
-                [s for s in sells if s["wallet"] == wallet],
-                key=lambda x: x["block_time"]
-            )
+            realized_cost = 0.0
+            realized_sol = 0.0
 
             for sell in wallet_sells:
                 amount_to_match = sell["amount"]
                 sol_received = sell["sol_received"]
-                matched = 0.0
                 sell_cost = 0.0
+                matched_tokens = 0.0
 
-                while amount_to_match > 0 and buys_queue:
+                while amount_to_match > 1e-9 and buys_queue:
                     buy = buys_queue[0]
-                    available = buy.remaining_amount
+                    price_per_token = buy.sol_spent / buy.token_amount if buy.token_amount > 0 else 0.0
+                    match_amount = min(amount_to_match, buy.remaining_amount)
 
-                    if available <= amount_to_match:
-                        cost = available * buy.sol_spent
-                        matched += available
-                        sell_cost += cost
-                        amount_to_match -= available
-                        total_cost += cost
-                        total_tokens += available
+                    matched_tokens += match_amount
+                    sell_cost += match_amount * price_per_token
+                    buy.remaining_amount -= match_amount
+                    amount_to_match -= match_amount
+
+                    if buy.remaining_amount <= 1e-9:
                         buys_queue.popleft()
-                    else:
-                        cost = amount_to_match * buy.sol_spent
-                        matched += amount_to_match
-                        sell_cost += cost
-                        buy.remaining_amount -= amount_to_match
-                        total_cost += cost
-                        total_tokens += amount_to_match
-                        amount_to_match = 0
 
-                total_tokens_sold += matched
+                total_tokens_sold += matched_tokens
+                realized_cost += sell_cost
                 realized_sol += sol_received
 
-            # PnL summary
-            avg_buy_price = (total_cost / total_tokens) if total_tokens > 0 else None
-
-            if total_tokens_sold > 0 and not buys_queue:
-                roi = ((realized_sol - total_cost) / total_cost) * 100 if total_cost > 0 else None
+            # Calculate totals
+            total_tokens_bought = sum(b.token_amount for b in wallet_buys)
+            total_cost_basis = sum(b.sol_spent for b in wallet_buys)
+            remaining_tokens = sum(b.remaining_amount for b in wallet_buys)
+            
+            # Calculate average buy price (weighted average)
+            avg_buy_price = (total_cost_basis / total_tokens_bought) if total_tokens_bought > 0 else None
+            
+            # Calculate ROI properly
+            # Note: For accurate ROI, you would need current market price of the token
+            # For now, we'll calculate realized ROI only
+            realized_roi = ((realized_sol - realized_cost) / realized_cost * 100) if realized_cost > 1e-9 else None
+            
+            # Status logic
+            if total_tokens_sold > 0 and remaining_tokens > 1e-6:
+                status = f"Partially sold, holding {round(remaining_tokens, 4)} tokens"
+            elif total_tokens_sold > 0 and remaining_tokens <= 1e-6:
                 status = "Sold"
-
-            elif total_tokens_sold > 0 and buys_queue:
-                remaining = sum(b.remaining_amount for b in buys_queue)
-                cost_remaining = sum(b.remaining_amount * b.sol_spent for b in buys_queue)
-                avg_buy_price = (cost_remaining / remaining) if remaining else None
-                roi = ((realized_sol - total_cost) / total_cost) * 100 if total_cost > 0 else None
-                status = f"Partially sold, holding {round(remaining, 4)} tokens"
-
-            elif buys_queue:
-                remaining = sum(b.remaining_amount for b in buys_queue)
-                cost_remaining = sum(b.remaining_amount * b.sol_spent for b in buys_queue)
-                avg_buy_price = (cost_remaining / remaining) if remaining else None
-                roi = None
-                status = f"Holding {round(remaining, 4)} tokens"
+            elif total_tokens_sold == 0 and remaining_tokens > 0:
+                status = f"Holding {round(remaining_tokens, 4)} tokens"
+            else:
+                status = "Unknown"
 
             results.append({
                 "wallet": wallet,
                 "token": token_mint,
-                "roi_percent": round(roi, 2) if roi is not None else None,
+                "roi_percent": round(realized_roi, 2) if realized_roi is not None else None,
                 "realized_sol": round(realized_sol, 4),
-                "cost_basis_sol": round(total_cost, 4),
-                "avg_buy_price": round(avg_buy_price, 6) if avg_buy_price else None,
+                "cost_basis_sol": round(total_cost_basis, 4),  # Total cost of all buys
+                "avg_buy_price": round(avg_buy_price, 10) if avg_buy_price is not None else None,
                 "status": status,
                 "buy_signatures": [b.signature for b in wallet_buys],
                 "sell_signatures": [s["signature"] for s in wallet_sells],
