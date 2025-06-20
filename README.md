@@ -1,5 +1,17 @@
 # alpha
 
+20/06/25
+![image](https://github.com/user-attachments/assets/e9470efb-db04-4ea6-a0a2-de072adf2954)
+
+tested with 4 coins simultaneously with max 15 wallets for each so 60 wallets fetched in total
+
+all data now correct in csv table
+
+whole program took about 6 minutes to run however this wont increase much with additional coins up to a certain amount due to multi threading
+
+
+
+17/06
 Finds early transactions based on unix time on launch and token address both manually provided
 
 Filters out failed transactions and minimum sol exchanged filter
