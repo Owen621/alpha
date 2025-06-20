@@ -48,3 +48,5 @@ exports this data to csv file
 
 utilising multiple platforms to run concurrently in order to prevent 429 on free plans
 
+edit: i think i may need to change stats that are calculated such as realised sol is not minusing original sol spent
+
