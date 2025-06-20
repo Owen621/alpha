@@ -105,14 +105,11 @@ class PnLCalculator:
                             if native_transfer.get("fromUserAccount") == wallet:
                                 sol_spent += native_transfer.get("amount", 0)
                         
-                        # Calculate price per token
-                        sol_price = (sol_spent / 1e9) / token_amount if token_amount else 0
-                        
                         buys.append(TokenBuy(
                             wallet=wallet,
                             token_mint=token_mint,
                             token_amount=token_amount,
-                            sol_price=sol_price,
+                            sol_spent=sol_spent,
                             block_time=timestamp,
                             signature=signature
                         ))
@@ -270,7 +267,7 @@ class PnLCalculator:
                     available = buy.remaining_amount
 
                     if available <= amount_to_match:
-                        cost = available * buy.sol_price
+                        cost = available * buy.sol_spent
                         matched += available
                         sell_cost += cost
                         amount_to_match -= available
@@ -278,7 +275,7 @@ class PnLCalculator:
                         total_tokens += available
                         buys_queue.popleft()
                     else:
-                        cost = amount_to_match * buy.sol_price
+                        cost = amount_to_match * buy.sol_spent
                         matched += amount_to_match
                         sell_cost += cost
                         buy.remaining_amount -= amount_to_match
@@ -298,14 +295,14 @@ class PnLCalculator:
 
             elif total_tokens_sold > 0 and buys_queue:
                 remaining = sum(b.remaining_amount for b in buys_queue)
-                cost_remaining = sum(b.remaining_amount * b.sol_price for b in buys_queue)
+                cost_remaining = sum(b.remaining_amount * b.sol_spent for b in buys_queue)
                 avg_buy_price = (cost_remaining / remaining) if remaining else None
                 roi = ((realized_sol - total_cost) / total_cost) * 100 if total_cost > 0 else None
                 status = f"Partially sold, holding {round(remaining, 4)} tokens"
 
             elif buys_queue:
                 remaining = sum(b.remaining_amount for b in buys_queue)
-                cost_remaining = sum(b.remaining_amount * b.sol_price for b in buys_queue)
+                cost_remaining = sum(b.remaining_amount * b.sol_spent for b in buys_queue)
                 avg_buy_price = (cost_remaining / remaining) if remaining else None
                 roi = None
                 status = f"Holding {round(remaining, 4)} tokens"

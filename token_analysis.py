@@ -52,7 +52,7 @@ class TokenAnalyzer:
                         wallet=user_wallet,
                         token_mint=self.token_mint,
                         token_amount=amount,
-                        sol_price=sol_moved,
+                        sol_spent=sol_moved,
                         block_time=block_time,
                         signature=signature
                     )
