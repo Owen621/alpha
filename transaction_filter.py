@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple, Optional
 
 class TransactionFilter:
     def __init__(self, token_mint: str, min_sol_amount: float):
@@ -6,63 +6,33 @@ class TransactionFilter:
         self.min_sol_amount = min_sol_amount
 
 
-    def is_buy_transaction(self, transaction: Dict, user_wallet: str, token_mint: str) -> bool:
-        """Check if a transaction is a buy (user receives the target token)"""
+    def is_buy_transaction(self, transaction: Dict, user_wallet: str, token_mint: str) -> Tuple[bool, Optional[float]]:
+        """Check if user_wallet received token_mint in this transaction, returning (True, amount) or (False, None)."""
         try:
-            message = transaction.get('transaction', {}).get('message', {})
-            instructions = message.get('instructions', [])
-            
-            for instruction in instructions:
-                if 'parsed' in instruction:
-                    parsed = instruction['parsed']
-                    if isinstance(parsed, dict):
-                        instruction_type = parsed.get('type')
-                        info = parsed.get('info', {})
-                        
-                        # For direct token transfers
-                        if instruction_type in ['transfer', 'transferChecked']:
-                            if (info.get('mint') == token_mint and 
-                                info.get('destination') == user_wallet):
-                                return True
-                        
-                        # For DEX swaps - check if user received the target token
-                        elif instruction_type == 'swap':
-                            if (info.get('outputMint') == token_mint and 
-                                info.get('authority') == user_wallet):
-                                return True
-            
-            # Also check token balance changes
             pre_balances = transaction.get('meta', {}).get('preTokenBalances', [])
             post_balances = transaction.get('meta', {}).get('postTokenBalances', [])
             
-            # Create a mapping of account indices for easier comparison
-            pre_balance_map = {}
-            for balance in pre_balances:
-                if (balance.get('mint') == token_mint and 
-                    balance.get('owner') == user_wallet):
-                    account_index = balance.get('accountIndex')
-                    if account_index is not None:
-                        # Use uiAmountString and convert to float, fallback to amount/decimals
-                        ui_amount = self._get_token_amount(balance.get('uiTokenAmount', {}))
-                        pre_balance_map[account_index] = ui_amount
-            
-            # Check if any post balances show an increase
+            pre_balance_map = {
+                b.get('accountIndex'): self._get_token_amount(b.get('uiTokenAmount', {}))
+                for b in pre_balances
+                if b.get('mint') == token_mint and b.get('owner') == user_wallet
+            }
+
             for balance in post_balances:
-                if (balance.get('mint') == token_mint and 
-                    balance.get('owner') == user_wallet):
+                if balance.get('mint') == token_mint and balance.get('owner') == user_wallet:
                     account_index = balance.get('accountIndex')
-                    if account_index is not None:
-                        pre_amount = pre_balance_map.get(account_index, 0.0)
-                        post_amount = self._get_token_amount(balance.get('uiTokenAmount', {}))
-                        
-                        if post_amount > pre_amount:
-                            return True
-            
-            return False
+                    pre_amount = pre_balance_map.get(account_index, 0.0)
+                    post_amount = self._get_token_amount(balance.get('uiTokenAmount', {}))
+                    
+                    if post_amount > pre_amount:
+                        return True, post_amount - pre_amount
+
+            return False, None
+
         except Exception as e:
             print(f"Error determining buy transaction: {e}")
-            return False
-        
+            return False, None
+
 
     def _get_token_amount(self, ui_token_amount: Dict) -> float:
         """

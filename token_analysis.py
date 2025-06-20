@@ -2,6 +2,8 @@ from solana_block_finder import SolanaBlockFinder
 from transaction_filter import TransactionFilter
 from utils import extract_main_wallet_sol_change, get_transaction_fee_payer
 from typing import List, Dict
+from models import TokenBuy
+from datetime import datetime
 
 class TokenAnalyzer:
     def __init__(self, rpc_url: str, token_mint: str, min_sol_amount: float):
@@ -29,11 +31,10 @@ class TokenAnalyzer:
             
             block_time = self.block_finder.get_block_time(slot)
             transactions = self.block_finder.get_block_transactions(slot)
-            
             for tx in transactions:
                 user_wallet = get_transaction_fee_payer(tx)
-                if self.tx_filter.is_buy_transaction(tx, user_wallet, self.token_mint):
-                    
+                valid, amount = self.tx_filter.is_buy_transaction(tx, user_wallet, self.token_mint)
+                if valid:
                     meta = tx.get('meta', {})
                     if not meta or meta.get('err') is not None:
                         continue  # Skip failed transactions
@@ -46,16 +47,21 @@ class TokenAnalyzer:
                     if not signature:
                         # Skip transactions with no signature
                         continue
-
-                    tx_info = {
-                        'signature': signature,
-                        'slot': slot,
-                        'blockTime': block_time,
-                        'transaction': tx,
-                        'wallet': user_wallet
-                    }
-                    token_transactions.append(tx_info)
+                   
+                    buy = TokenBuy(
+                        wallet=user_wallet,
+                        token_mint=self.token_mint,
+                        token_amount=amount,
+                        sol_price=sol_moved,
+                        block_time=block_time,
+                        signature=signature
+                    )
+                    token_transactions.append(buy)
+                    if len(token_transactions) >= 10:
+                        break
                     #print(f"Found token transaction: {tx_info['signature']} at slot {slot}")
+            if len(token_transactions) >= 10:
+                break
         return token_transactions
 
 

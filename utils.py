@@ -1,4 +1,33 @@
-from typing import Dict
+import pandas as pd
+import os
+from typing import List, Dict, Optional
+from datetime import datetime
+
+def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, verbose: bool = True):
+    if not results:
+        if verbose:
+            print("No results to export.")
+        return
+
+    # Auto-generate filename with timestamp if none provided
+    if not filename:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"pnl_results_{timestamp}.csv"
+
+    # Normalize dictionaries in case of missing keys
+    df = pd.json_normalize(results)
+
+    # Flatten any lists in known fields
+    for col in df.columns:
+        if df[col].apply(lambda x: isinstance(x, list)).any():
+            df[col] = df[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
+
+    df.to_csv(filename, index=False)
+
+    if verbose:
+        print(f"Results exported to {filename}")
+
+
 
 def extract_main_wallet_sol_change(tx: Dict) -> float:
     try:
@@ -45,4 +74,15 @@ def get_transaction_fee_payer(transaction: Dict) -> str:
     except Exception as e:
         print(f"Error getting fee payer: {e}")
         return ''
-    
+
+def calculate_pnl(buy, sell):
+    if not sell:
+        return {"roi": "N/A", "duration": "N/A", "status": "HODLing"}
+
+    roi = (sell["price"] - buy.price) / buy.price * 100
+    duration = (sell["timestamp"] - buy.timestamp).total_seconds() / 3600  # in hours
+    return {
+        "roi": round(roi, 2),
+        "duration": round(duration, 2),
+        "status": "Sold"
+    }
