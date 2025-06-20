@@ -36,3 +36,15 @@ tag these wallets now eg:
 - Luck: 1 big hit, otherwise losses
 Only check history from a certain window of time, i need to know whos winning now not who won 2 years ago
 
+
+19/06/2025
+![image](https://github.com/user-attachments/assets/1517a9c7-d3f9-4050-8df7-7de5c4e4112e)
+
+Still some errors as you can see with average price and a few other things but other than that lots of progress made
+
+Can run multiple provided coins at a time and get pnl from early buyers from point in time x up to point in time y
+
+exports this data to csv file
+
+utilising multiple platforms to run concurrently in order to prevent 429 on free plans
+
