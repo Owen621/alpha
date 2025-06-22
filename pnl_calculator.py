@@ -1,9 +1,10 @@
 import requests
-from models import TokenBuy
-from typing import List, Dict
+from models import TokenBuy, TokenSell
+from typing import List, Dict, Union
 from constants import HELIUS_API_KEY
 from collections import deque
 import time
+from custom_enums import TransactionType
 from utils import extract_main_wallet_sol_change_enhanced
 
 class PnLCalculator:
@@ -11,9 +12,28 @@ class PnLCalculator:
         self.helius_url = f"https://api.helius.xyz/v0/addresses"
 
 
-    
-    def fetch_all_buys(self, wallet: str, token_mint: str, cutoff_time: int, buy_signature: str) -> List[TokenBuy]:
-        """Optimized version using getSignaturesForAddress + batch Enhanced Transactions API"""
+
+    def fetch_wallet_transactions(
+        self, 
+        wallet: str, 
+        token_mint: str, 
+        cutoff_time: int, 
+        buy_signature: str, 
+        transaction_type: TransactionType
+    ) -> Union[List[TokenBuy], List[TokenSell]]:
+        """
+        Unified function to fetch buys or sells using getSignaturesForAddress + batch Enhanced Transactions API
+        
+        Args:
+            wallet: The wallet address to fetch transactions for
+            token_mint: The token mint address
+            cutoff_time: Unix timestamp cutoff
+            buy_signature: Target signature to stop at
+            transaction_type: TransactionType.BUY or TransactionType.SELL
+        
+        Returns:
+            List of TokenBuy objects for buys, List of TokenSell objects for sells
+        """
         
         # Step 1: Get signatures quickly using standard RPC (supports limit=1000)
         signatures = []
@@ -66,7 +86,7 @@ class PnLCalculator:
                 break
         
         # Step 2: Process signatures in batches with Enhanced Transactions API
-        buys = []
+        transactions = []
         batch_size = 100  # Enhanced API supports up to 100 signatures per request
         
         for i in range(0, len(signatures), batch_size):
@@ -93,14 +113,17 @@ class PnLCalculator:
                 timestamp = tx.get("timestamp")
                 
                 for transfer in token_transfers:
-                    if (transfer.get("mint") == token_mint and 
-                        transfer.get("toUserAccount") == wallet):
-                        
+                    # Check transaction direction based on type
+                    is_buy_transfer = (transfer.get("mint") == token_mint and 
+                                    transfer.get("toUserAccount") == wallet)
+                    is_sell_transfer = (transfer.get("mint") == token_mint and 
+                                    transfer.get("fromUserAccount") == wallet)
+                    
+                    if transaction_type == TransactionType.BUY and is_buy_transfer:
                         token_amount = transfer.get("tokenAmount", 0)
-                        
                         sol_spent = abs(extract_main_wallet_sol_change_enhanced(tx))
                         
-                        buys.append(TokenBuy(
+                        transactions.append(TokenBuy(
                             wallet=wallet,
                             token_mint=token_mint,
                             token_amount=token_amount,
@@ -108,117 +131,38 @@ class PnLCalculator:
                             block_time=timestamp,
                             signature=signature
                         ))
-            
-            time.sleep(0.3)  # Small delay between batches
-        
-        print(f"{len(buys)} buys found for wallet: {wallet}")
-        return buys
-
-    def fetch_wallet_sells(self, wallet: str, token_mint: str, cutoff_time: int, buy_signature: str) -> List[Dict]:
-        """Hybrid version using getSignaturesForAddress + batch Enhanced Transactions API"""
-        
-        # Step 1: Get signatures quickly using standard RPC (supports limit=1000)
-        signatures = []
-        before_signature = None
-        found_target_signature = False
-        
-        rpc_url = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}"
-        
-        while not found_target_signature:
-            body = {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "getSignaturesForAddress",
-                "params": [
-                    wallet,
-                    {
-                        "limit": 1000,  # Standard RPC supports 1000
-                        **({"before": before_signature} if before_signature else {})
-                    }
-                ]
-            }
-            
-            response = requests.post(rpc_url, json=body)
-            response.raise_for_status()
-            sigs_data = response.json()
-            
-            if not sigs_data.get("result") or len(sigs_data["result"]) == 0:
-                break
-                
-            for sig_info in sigs_data["result"]:
-                signature = sig_info.get("signature")
-                timestamp = sig_info.get("blockTime")
-                
-                if timestamp and timestamp > cutoff_time:
-                    if signature == buy_signature:
-                        found_target_signature = True
-                        break
-                    continue
-                    
-                signatures.append(signature)
-                
-                if signature == buy_signature:
-                    found_target_signature = True
-                    break
-            
-            if not found_target_signature and sigs_data["result"]:
-                before_signature = sigs_data["result"][-1].get("signature")
-            else:
-                break
-        
-        # Step 2: Process signatures in batches with Enhanced Transactions API
-        sells = []
-        batch_size = 100  # Enhanced API supports up to 100 signatures per request
-        
-        for i in range(0, len(signatures), batch_size):
-            batch_signatures = signatures[i:i + batch_size]
-            
-            enhanced_url = f"https://api.helius.xyz/v0/transactions?api-key={HELIUS_API_KEY}"
-            
-            response = requests.post(enhanced_url, json={
-                "transactions": batch_signatures
-            })
-            response.raise_for_status()
-            parsed_txs = response.json()
-            
-            for tx in parsed_txs:
-                if not tx:  # Skip null transactions
-                    continue
-                    
-                # Filter for SWAP type transactions
-                if tx.get("type") != "SWAP":
-                    continue
-                    
-                token_transfers = tx.get("tokenTransfers", [])
-                signature = tx.get("signature")
-                timestamp = tx.get("timestamp")
-                
-                for transfer in token_transfers:
-                    if (transfer.get("mint") == token_mint and 
-                        transfer.get("fromUserAccount") == wallet):
                         
-                        # This is a sell (token leaving the wallet)
-                        amount = transfer.get("tokenAmount", 0)
-                        
+                    elif transaction_type == TransactionType.SELL and is_sell_transfer:
+                        token_amount = transfer.get("tokenAmount", 0)
                         sol_received = extract_main_wallet_sol_change_enhanced(tx)
                         
-                        sells.append({
-                            "wallet": wallet,
-                            "token_mint": token_mint,
-                            "amount": amount,
-                            "sol_received": sol_received,
-                            "block_time": timestamp,
-                            "signature": signature
-                        })
+                        transactions.append(TokenSell(
+                            wallet=wallet,
+                            token_mint=token_mint,
+                            token_amount=token_amount,
+                            sol_received=sol_received,
+                            block_time=timestamp,
+                            signature=signature
+                        ))
             
             time.sleep(0.3)  # Small delay between batches
         
-        print(f"{len(sells)} sells found for wallet: {wallet}")
-        return sells
+        transaction_type_str = "buys" if transaction_type == TransactionType.BUY else "sells"
+        print(f"{len(transactions)} {transaction_type_str} found for wallet: {wallet}")
+        return transactions
+
+    # Convenience wrapper methods
+    def fetch_all_buys(self, wallet: str, token_mint: str, cutoff_time: int, buy_signature: str) -> List[TokenBuy]:
+        """Fetch all buy transactions for a wallet"""
+        return self.fetch_wallet_transactions(wallet, token_mint, cutoff_time, buy_signature, TransactionType.BUY)
+
+    def fetch_wallet_sells(self, wallet: str, token_mint: str, cutoff_time: int, buy_signature: str) -> List[TokenSell]:
+        """Fetch all sell transactions for a wallet"""
+        return self.fetch_wallet_transactions(wallet, token_mint, cutoff_time, buy_signature, TransactionType.SELL)
 
 
 
-    def match_buys_to_sells(self, buys: List[TokenBuy], sells: List[Dict]) -> List[Dict]:
+    def match_buys_to_sells(self, buys: List[TokenBuy], sells: List[TokenSell]) -> List[Dict]:
         if not buys:
             return []
 
@@ -228,7 +172,7 @@ class PnLCalculator:
 
         for wallet in wallets:
             wallet_buys = sorted([b for b in buys if b.wallet == wallet], key=lambda x: x.block_time)
-            wallet_sells = sorted([s for s in sells if s["wallet"] == wallet], key=lambda x: x["block_time"])
+            wallet_sells = sorted([s for s in sells if s.wallet == wallet], key=lambda x: x.block_time)
 
             # Init remaining amount per buy
             for b in wallet_buys:
@@ -240,8 +184,8 @@ class PnLCalculator:
             realized_sol = 0.0
 
             for sell in wallet_sells:
-                amount_to_match = sell["amount"]
-                sol_received = sell["sol_received"]
+                amount_to_match = sell.token_amount  # Changed from sell["amount"]
+                sol_received = sell.sol_received     # Changed from sell["sol_received"]
                 sell_cost = 0.0
                 matched_tokens = 0.0
 
@@ -294,7 +238,7 @@ class PnLCalculator:
                 "avg_buy_price": round(avg_buy_price, 10) if avg_buy_price is not None else None,
                 "status": status,
                 "buy_signatures": [b.signature for b in wallet_buys],
-                "sell_signatures": [s["signature"] for s in wallet_sells],
+                "sell_signatures": [s.signature for s in wallet_sells],  # Changed from s["signature"]
             })
 
         return results

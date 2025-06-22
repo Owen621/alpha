@@ -31,7 +31,7 @@ if __name__ == "__main__":
         ("2KdMNf6tEQ9MWjvDFk9jKtcuTjKoipibCTqB9vtBpump", 1750292351, f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
     ]
     window_hours = 0.02
-    sell_window = 0.12
+    sell_window = 0.2
     total_results = []
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [

@@ -3,7 +3,7 @@ from transaction_filter import TransactionFilter
 from utils import extract_main_wallet_sol_change, get_transaction_fee_payer
 from typing import List, Dict
 from models import TokenBuy
-from datetime import datetime
+from constants import WALLETS_PER_TOKEN
 
 class TokenAnalyzer:
     def __init__(self, rpc_url: str, token_mint: str, min_sol_amount: float):
@@ -58,10 +58,10 @@ class TokenAnalyzer:
                             signature=signature
                         )
                         token_transactions.append(buy)
-                    if len(token_transactions) >= 15:
+                    if len(token_transactions) >= WALLETS_PER_TOKEN:
                         break
                     #print(f"Found token transaction: {tx_info['signature']} at slot {slot}")
-            if len(token_transactions) >= 15:
+            if len(token_transactions) >= WALLETS_PER_TOKEN:
                 break
         return token_transactions
 
