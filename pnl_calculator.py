@@ -1,38 +1,33 @@
 import requests
 from models import TokenBuy, TokenSell
-from typing import List, Dict, Union
+from typing import List, Dict, Tuple
 from constants import HELIUS_API_KEY
 from collections import deque
 import time
-from custom_enums import TransactionType
 from utils import extract_main_wallet_sol_change_enhanced
 
 class PnLCalculator:
     def __init__(self):
         self.helius_url = f"https://api.helius.xyz/v0/addresses"
 
-
-
-    def fetch_wallet_transactions(
+    def fetch_wallet_buys_and_sells(
         self, 
         wallet: str, 
         token_mint: str, 
         cutoff_time: int, 
-        buy_signature: str, 
-        transaction_type: TransactionType
-    ) -> Union[List[TokenBuy], List[TokenSell]]:
+        buy_signature: str
+    ) -> Tuple[List[TokenBuy], List[TokenSell]]:
         """
-        Unified function to fetch buys or sells using getSignaturesForAddress + batch Enhanced Transactions API
+        Unified function to fetch both buys and sells in a single API call sequence
         
         Args:
             wallet: The wallet address to fetch transactions for
             token_mint: The token mint address
             cutoff_time: Unix timestamp cutoff
             buy_signature: Target signature to stop at
-            transaction_type: TransactionType.BUY or TransactionType.SELL
         
         Returns:
-            List of TokenBuy objects for buys, List of TokenSell objects for sells
+            Tuple of (buys, sells) lists
         """
         
         # Step 1: Get signatures quickly using standard RPC (supports limit=1000)
@@ -86,7 +81,8 @@ class PnLCalculator:
                 break
         
         # Step 2: Process signatures in batches with Enhanced Transactions API
-        transactions = []
+        buys = []
+        sells = []
         batch_size = 100  # Enhanced API supports up to 100 signatures per request
         
         for i in range(0, len(signatures), batch_size):
@@ -113,17 +109,18 @@ class PnLCalculator:
                 timestamp = tx.get("timestamp")
                 
                 for transfer in token_transfers:
-                    # Check transaction direction based on type
+                    # Check for buy transfers
                     is_buy_transfer = (transfer.get("mint") == token_mint and 
                                     transfer.get("toUserAccount") == wallet)
+                    # Check for sell transfers
                     is_sell_transfer = (transfer.get("mint") == token_mint and 
                                     transfer.get("fromUserAccount") == wallet)
                     
-                    if transaction_type == TransactionType.BUY and is_buy_transfer:
+                    if is_buy_transfer:
                         token_amount = transfer.get("tokenAmount", 0)
                         sol_spent = abs(extract_main_wallet_sol_change_enhanced(tx))
                         
-                        transactions.append(TokenBuy(
+                        buys.append(TokenBuy(
                             wallet=wallet,
                             token_mint=token_mint,
                             token_amount=token_amount,
@@ -132,11 +129,11 @@ class PnLCalculator:
                             signature=signature
                         ))
                         
-                    elif transaction_type == TransactionType.SELL and is_sell_transfer:
+                    elif is_sell_transfer:
                         token_amount = transfer.get("tokenAmount", 0)
                         sol_received = extract_main_wallet_sol_change_enhanced(tx)
                         
-                        transactions.append(TokenSell(
+                        sells.append(TokenSell(
                             wallet=wallet,
                             token_mint=token_mint,
                             token_amount=token_amount,
@@ -147,18 +144,8 @@ class PnLCalculator:
             
             time.sleep(0.3)  # Small delay between batches
         
-        transaction_type_str = "buys" if transaction_type == TransactionType.BUY else "sells"
-        print(f"{len(transactions)} {transaction_type_str} found for wallet: {wallet}")
-        return transactions
-
-    # Convenience wrapper methods
-    def fetch_all_buys(self, wallet: str, token_mint: str, cutoff_time: int, buy_signature: str) -> List[TokenBuy]:
-        """Fetch all buy transactions for a wallet"""
-        return self.fetch_wallet_transactions(wallet, token_mint, cutoff_time, buy_signature, TransactionType.BUY)
-
-    def fetch_wallet_sells(self, wallet: str, token_mint: str, cutoff_time: int, buy_signature: str) -> List[TokenSell]:
-        """Fetch all sell transactions for a wallet"""
-        return self.fetch_wallet_transactions(wallet, token_mint, cutoff_time, buy_signature, TransactionType.SELL)
+        print(f"{len(buys)} buys and {len(sells)} sells found for wallet: {wallet}")
+        return buys, sells
 
 
 

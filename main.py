@@ -11,13 +11,16 @@ def analyze_token(token_mint: str, launch_time: int, window_hours: float, url: s
     pnl_calc = PnLCalculator()
 
     results = []
-
-    extended_window = launch_time+int(sell_window * 3600)
+    extended_window = launch_time + int(sell_window * 3600)
 
     for buy in early_buys:
-        # Fetch all buys from pnl_calc's fetch_all_buys method
-        buys = pnl_calc.fetch_all_buys(buy.wallet, token_mint, extended_window, buy.signature)
-        sells = pnl_calc.fetch_wallet_sells(buy.wallet, token_mint, extended_window, buy.signature)
+        # Fetch both buys and sells in a single optimized call
+        buys, sells = pnl_calc.fetch_wallet_buys_and_sells(
+            buy.wallet, 
+            token_mint, 
+            extended_window, 
+            buy.signature
+        )
         results += pnl_calc.match_buys_to_sells(buys, sells)
 
     return results
