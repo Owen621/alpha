@@ -1,5 +1,11 @@
 # alpha
 
+23/06
+![image](https://github.com/user-attachments/assets/4b7523fe-2a61-46e4-8775-53bdf51c2252)
+
+optimisation. 4x20
+
+
 20/06/25
 ![image](https://github.com/user-attachments/assets/e9470efb-db04-4ea6-a0a2-de072adf2954)
 
