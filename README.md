@@ -1,5 +1,12 @@
 # alpha
 
+24/06
+![image](https://github.com/user-attachments/assets/2af45433-0d4c-4ee4-989b-15f1ea9db637)
+Estimated launch time is no longer provided. Automatically finds launch time from given migration time
+(launch time cannot be fetched easily on solana)
+apis which fetch coins can easily get migration time
+
+
 23/06
 ![image](https://github.com/user-attachments/assets/4b7523fe-2a61-46e4-8775-53bdf51c2252)
 
