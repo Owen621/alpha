@@ -1,5 +1,14 @@
 # alpha
 
+01/07
+![image](https://github.com/user-attachments/assets/c2b5829b-a9cd-41d7-96a6-f2de1441090e)
+Now you just need the token address, no migration time or anything else. I ran 4 at once with 0.06 window and it didnt take long
+Also tested some edge cases where migration and launch were within the same minute and where a token was on a dex that tx didnt come up as swaps
+I had to remove the selection statements for that case and will fix at a later date since its causing some errors in the output as you can see -100% roi partially holding is because there were txs with the wallet and token in which fees were paid: 3PTxoyKhj4gLjWLd9GetfSHr3ZU6DyaUhpJmg9JGkPatmopsPXD9jctLpa8agV4S41EdhuyTHZbxrdjXq7TJvcJj. One was createIdempotent and another something else not too sure what these are but ill look into filtering in a different way.
+Next I need to automate fetching high volume/mc tokens on dex need to find an api
+
+
+
 24/06
 ![image](https://github.com/user-attachments/assets/2af45433-0d4c-4ee4-989b-15f1ea9db637)
 Estimated launch time is no longer provided. Automatically finds launch time from given migration time
