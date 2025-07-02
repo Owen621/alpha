@@ -79,7 +79,7 @@ class SolanaBlockFinder:
     def get_blocks_in_range(self, start_slot: int, end_slot: int) -> List[int]:
         """Get all confirmed blocks in a slot range"""
         # Solana has a 500,000 slot limit per request
-        max_range = 100000
+        max_range = 1000
         all_blocks = []
         
         current_start = start_slot

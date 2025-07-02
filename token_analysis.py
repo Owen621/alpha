@@ -99,7 +99,7 @@ class TokenAnalyzer:
     
 
 
-    def find_launch_time_optimized(self, migration_slot: int, minutes_back: float = 10.0) -> int:
+    def find_launch_time_optimized(self, migration_slot: int, minutes_back: float = 30.0) -> int:
         """
         Highly optimized launch time finder using time estimation and smart sampling.
         Works well even for launches hours before migration.
@@ -131,7 +131,7 @@ class TokenAnalyzer:
         current_slot = migration_slot
         samples_checked = 0
         consecutive_empty_count = 0  # Track consecutive slots with no activity
-        max_consecutive_empty = 12   # Stop after this many consecutive empty slots
+        max_consecutive_empty = 25   # Stop after this many consecutive empty slots
         
         while current_slot >= estimated_start_slot and samples_checked < 200:  # Limit samples
             samples_checked += 1
@@ -187,4 +187,4 @@ class TokenAnalyzer:
             return first_activity_slot
         else:
             print("No activity found, using fallback")
-            return migration_slot - 1500
+            return migration_slot

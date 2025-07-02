@@ -100,10 +100,6 @@ class PnLCalculator:
                 if not tx:  # Skip null transactions
                     continue
                     
-                # Filter for SWAP type transactions
-                if tx.get("type") != "SWAP":
-                    continue
-                    
                 token_transfers = tx.get("tokenTransfers", [])
                 signature = tx.get("signature")
                 timestamp = tx.get("timestamp")
