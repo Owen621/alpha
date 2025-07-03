@@ -10,6 +10,41 @@ class PnLCalculator:
     def __init__(self):
         self.helius_url = f"https://api.helius.xyz/v0/addresses"
 
+    def is_valid_sell(self, tx, wallet):
+        if "tokenTransfers" not in tx:
+            return False
+
+        received_SOL = False
+        sent_project_token = False
+
+        for transfer in tx["tokenTransfers"]:
+            if transfer["toUserAccount"] == wallet:
+                if transfer["mint"] == "So11111111111111111111111111111111111111112":
+                    received_SOL = True
+            if transfer["fromUserAccount"] == wallet:
+                if transfer["mint"] != "So11111111111111111111111111111111111111112":
+                    sent_project_token = True
+
+        return received_SOL and sent_project_token
+
+    def is_valid_buy(self, tx, wallet):
+        if "tokenTransfers" not in tx:
+            return False
+
+        sent_SOL = False
+        received_project_token = False
+
+        for transfer in tx["tokenTransfers"]:
+            if transfer["fromUserAccount"] == wallet:
+                if transfer["mint"] == "So11111111111111111111111111111111111111112":
+                    sent_SOL = True
+            if transfer["toUserAccount"] == wallet:
+                if transfer["mint"] != "So11111111111111111111111111111111111111112":
+                    received_project_token = True
+
+        return sent_SOL and received_project_token
+
+
     def fetch_wallet_buys_and_sells(
         self, 
         wallet: str, 
@@ -18,19 +53,10 @@ class PnLCalculator:
         buy_signature: str
     ) -> Tuple[List[TokenBuy], List[TokenSell]]:
         """
-        Unified function to fetch both buys and sells in a single API call sequence
-        
-        Args:
-            wallet: The wallet address to fetch transactions for
-            token_mint: The token mint address
-            cutoff_time: Unix timestamp cutoff
-            buy_signature: Target signature to stop at
-        
-        Returns:
-            Tuple of (buys, sells) lists
+        Unified function to fetch both buys and sells using Enhanced Transactions API
         """
         
-        # Step 1: Get signatures quickly using standard RPC (supports limit=1000)
+        # Step 1: Get signatures quickly using standard RPC
         signatures = []
         before_signature = None
         found_target_signature = False
@@ -45,7 +71,7 @@ class PnLCalculator:
                 "params": [
                     wallet,
                     {
-                        "limit": 1000,  # Standard RPC supports 1000
+                        "limit": 1000,
                         **({"before": before_signature} if before_signature else {})
                     }
                 ]
@@ -80,10 +106,10 @@ class PnLCalculator:
             else:
                 break
         
-        # Step 2: Process signatures in batches with Enhanced Transactions API
+        # Step 2: Use Enhanced Transactions API to get parsed transactions
         buys = []
         sells = []
-        batch_size = 100  # Enhanced API supports up to 100 signatures per request
+        batch_size = 100
         
         for i in range(0, len(signatures), batch_size):
             batch_signatures = signatures[i:i + batch_size]
@@ -99,46 +125,51 @@ class PnLCalculator:
             for tx in parsed_txs:
                 if not tx:  # Skip null transactions
                     continue
-                    
-                token_transfers = tx.get("tokenTransfers", [])
+                
+                #Filter for actual trading transactions
+                #tx_type = tx.get("type")
+                #if tx_type not in ["SWAP", "BUY", "SELL"]:
+                    #continue
+                
+                
                 signature = tx.get("signature")
                 timestamp = tx.get("timestamp")
+                token_transfers = tx.get("tokenTransfers", [])
                 
                 for transfer in token_transfers:
-                    # Check for buy transfers
-                    is_buy_transfer = (transfer.get("mint") == token_mint and 
-                                    transfer.get("toUserAccount") == wallet)
-                    # Check for sell transfers
-                    is_sell_transfer = (transfer.get("mint") == token_mint and 
-                                    transfer.get("fromUserAccount") == wallet)
+                    if transfer.get("mint") != token_mint:
+                        continue
                     
-                    if is_buy_transfer:
+                    # Check for buy transfers (token coming to wallet)
+                    if transfer.get("toUserAccount") == wallet:
                         token_amount = transfer.get("tokenAmount", 0)
                         sol_spent = abs(extract_main_wallet_sol_change_enhanced(tx))
                         
-                        buys.append(TokenBuy(
-                            wallet=wallet,
-                            token_mint=token_mint,
-                            token_amount=token_amount,
-                            sol_spent=sol_spent,
-                            block_time=timestamp,
-                            signature=signature
-                        ))
+                        if self.is_valid_buy(tx, wallet):
+                            buys.append(TokenBuy(
+                                wallet=wallet,
+                                token_mint=token_mint,
+                                token_amount=token_amount,
+                                sol_spent=sol_spent,
+                                block_time=timestamp,
+                                signature=signature
+                            ))
                         
-                    elif is_sell_transfer:
+                    # Check for sell transfers (token leaving wallet)
+                    elif transfer.get("fromUserAccount") == wallet:
                         token_amount = transfer.get("tokenAmount", 0)
                         sol_received = extract_main_wallet_sol_change_enhanced(tx)
-                        
-                        sells.append(TokenSell(
-                            wallet=wallet,
-                            token_mint=token_mint,
-                            token_amount=token_amount,
-                            sol_received=sol_received,
-                            block_time=timestamp,
-                            signature=signature
-                        ))
+                        if self.is_valid_sell(tx, wallet):
+                            sells.append(TokenSell(
+                                wallet=wallet,
+                                token_mint=token_mint,
+                                token_amount=token_amount,
+                                sol_received=sol_received,
+                                block_time=timestamp,
+                                signature=signature
+                            ))
             
-            time.sleep(0.3)  # Small delay between batches
+            time.sleep(0.3)  # Rate limiting
         
         print(f"{len(buys)} buys and {len(sells)} sells found for wallet: {wallet}")
         return buys, sells

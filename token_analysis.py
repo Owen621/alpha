@@ -20,9 +20,9 @@ class TokenAnalyzer:
             start_slot, end_slot = end_slot, start_slot
 
         blocks = self.block_finder.get_blocks_in_range(start_slot, end_slot)
-        if len(blocks) > max_blocks:
-            print(f"Too many blocks ({len(blocks)}), limiting to {max_blocks}")
-            blocks = blocks[:max_blocks]
+        # if len(blocks) > max_blocks:
+        #     print(f"Too many blocks ({len(blocks)}), limiting to {max_blocks}")
+        #     blocks = blocks[:max_blocks]
 
         token_transactions = []
         for i, slot in enumerate(blocks):

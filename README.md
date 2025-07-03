@@ -1,5 +1,8 @@
 # alpha
 
+03/07
+When there is a 10 or so minute gap between launch and migration where nothing has happened, especially since at the moment migration is such a low mc theres no much activity beforehand, the program may take a while to go through this period. This is important though to find the pre dex buyers with alpha. For the real thing, I suggest the window is extended massively and blocks are extensively searched, utilising the number of wallets per token limit rather than window cut off. The program will take a while to execute however this is not too important for now since accuracy of the data is vital
+
 01/07
 ![image](https://github.com/user-attachments/assets/c2b5829b-a9cd-41d7-96a6-f2de1441090e)
 Now you just need the token address, no migration time or anything else. I ran 4 at once with 0.06 window and it didnt take long

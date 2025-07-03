@@ -22,7 +22,7 @@ def analyze_token(token_mint: str, migration_time: int, window_hours: float, url
         buys, sells = pnl_calc.fetch_wallet_buys_and_sells(
             buy.wallet, 
             token_mint, 
-            min(buy.block_time+200, migration_time+200),
+            min(buy.block_time+1000, migration_time+1000),
             buy.signature
         )
         results += pnl_calc.match_buys_to_sells(buys, sells)
@@ -32,10 +32,10 @@ def analyze_token(token_mint: str, migration_time: int, window_hours: float, url
 if __name__ == "__main__":
 
     tokens_to_analyze = [
-        ("8wvLsACsR3owhGzmLLHTgh2waW2vKNtVYWDs9cCopump", QUICKNODE_URL),
-        ("GSdtu9Nm7kZ1x8ddtisXFthzxFM5CmuMrSnBFfnHokm6", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
-        ("EZnKmc92jKNw1QKpLgMWdP2BP2NqFyz7B2VAzvnzbonk", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
-        ("F4ZMRoqeMG1pnNKCN7QWe5d1LspfGZaVNTE1midcpump", QUICKNODE_URL),
+        ("Hv69wUkD225TYq111eAar9CtjhNpzBTRFpHkpY3pbonk", QUICKNODE_URL),
+        ("6DZLihLpHZW7kkaKLfR3qLbzj57N6MFsmCNrGvUXjups", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
+        ("FzPcmnQm5ijvF4BR4URbrAszMbcAMF6vaQSBUJb3bonk", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
+        ("ADSkaYVeTYazX77JypE7HEvRdx1QZVAo3whhCACjjups", QUICKNODE_URL),
     ]
     total_results = []
     dex = DexscreenerClient()
