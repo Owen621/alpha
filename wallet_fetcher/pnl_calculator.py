@@ -1,10 +1,10 @@
 import requests
-from models import TokenBuy, TokenSell
+from .models import TokenBuy, TokenSell
 from typing import List, Dict, Tuple
 from constants import HELIUS_API_KEY
 from collections import deque
 import time
-from utils import extract_main_wallet_sol_change_enhanced
+from .utils import extract_main_wallet_sol_change_enhanced
 
 class PnLCalculator:
     def __init__(self):
@@ -125,12 +125,6 @@ class PnLCalculator:
             for tx in parsed_txs:
                 if not tx:  # Skip null transactions
                     continue
-                
-                #Filter for actual trading transactions
-                #tx_type = tx.get("type")
-                #if tx_type not in ["SWAP", "BUY", "SELL"]:
-                    #continue
-                
                 
                 signature = tx.get("signature")
                 timestamp = tx.get("timestamp")

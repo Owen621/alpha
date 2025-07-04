@@ -2,6 +2,7 @@ import pandas as pd
 from typing import List, Dict, Optional
 from datetime import datetime
 from constants import HELIUS_API_KEY
+import os
 
 def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, verbose: bool = True):
     if not results:
@@ -21,8 +22,11 @@ def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, v
     for col in df.columns:
         if df[col].apply(lambda x: isinstance(x, list)).any():
             df[col] = df[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
-
-    df.to_csv(filename, index=False)
+    
+    # Use fixed output path
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    output_path = os.path.join(project_root, "data", "early_wallets.csv")
+    df.to_csv(output_path, index=False)
 
     if verbose:
         print(f"Results exported to {filename}")

@@ -1,10 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from token_analysis import TokenAnalyzer
+from wallet_fetcher.token_analysis import TokenAnalyzer
 from constants import HELIUS_API_KEY, QUICKNODE_URL, MIN_SOL_AMOUNT, SOL_CHAIN_ID, WINDOW_HOURS
-from pnl_calculator import PnLCalculator
-from utils import export_results_to_csv
+from wallet_fetcher.pnl_calculator import PnLCalculator
+from wallet_fetcher.utils import export_results_to_csv
 from datetime import datetime
-from dex_client import DexscreenerClient
+from wallet_fetcher.dex_client import DexscreenerClient
 from collections import defaultdict
 
 def analyze_token(token_mint: str, migration_time: int, window_hours: float, url: str):
@@ -32,10 +32,10 @@ def analyze_token(token_mint: str, migration_time: int, window_hours: float, url
 if __name__ == "__main__":
 
     tokens_to_analyze = [
-        ("Hv69wUkD225TYq111eAar9CtjhNpzBTRFpHkpY3pbonk", QUICKNODE_URL),
-        ("6DZLihLpHZW7kkaKLfR3qLbzj57N6MFsmCNrGvUXjups", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
+        #("Hv69wUkD225TYq111eAar9CtjhNpzBTRFpHkpY3pbonk", QUICKNODE_URL),
+        #("6DZLihLpHZW7kkaKLfR3qLbzj57N6MFsmCNrGvUXjups", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
         ("FzPcmnQm5ijvF4BR4URbrAszMbcAMF6vaQSBUJb3bonk", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
-        ("ADSkaYVeTYazX77JypE7HEvRdx1QZVAo3whhCACjjups", QUICKNODE_URL),
+        #("ADSkaYVeTYazX77JypE7HEvRdx1QZVAo3whhCACjjups", QUICKNODE_URL),
     ]
     total_results = []
     dex = DexscreenerClient()

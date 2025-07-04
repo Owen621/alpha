@@ -1,8 +1,8 @@
-from solana_block_finder import SolanaBlockFinder
-from transaction_filter import TransactionFilter
-from utils import extract_main_wallet_sol_change, get_transaction_fee_payer
+from .solana_block_finder import SolanaBlockFinder
+from .transaction_filter import TransactionFilter
+from .utils import extract_main_wallet_sol_change, get_transaction_fee_payer
 from typing import List, Dict, Optional
-from models import TokenBuy
+from .models import TokenBuy
 from constants import WALLETS_PER_TOKEN
 from datetime import datetime
 import time
