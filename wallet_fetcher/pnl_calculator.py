@@ -4,6 +4,7 @@ from typing import List, Dict, Tuple
 from constants import HELIUS_API_KEY
 from collections import deque
 import time
+from datetime import datetime
 from .utils import extract_main_wallet_sol_change_enhanced
 
 class PnLCalculator:
@@ -246,7 +247,15 @@ class PnLCalculator:
                 "avg_buy_price": round(avg_buy_price, 10) if avg_buy_price is not None else None,
                 "status": status,
                 "buy_signatures": [b.signature for b in wallet_buys],
-                "sell_signatures": [s.signature for s in wallet_sells],  # Changed from s["signature"]
+                "buy_times": [
+                    datetime.fromtimestamp(b.block_time) if b.block_time else None
+                    for b in wallet_buys
+                ],
+                "sell_signatures": [s.signature for s in wallet_sells],
+                "sell_times": [
+                    datetime.fromtimestamp(s.block_time) if s.block_time else None
+                    for s in wallet_sells
+                ],
             })
 
         return results

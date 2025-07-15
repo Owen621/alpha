@@ -34,7 +34,7 @@ if __name__ == "__main__":
     tokens_to_analyze = [
         #("Hv69wUkD225TYq111eAar9CtjhNpzBTRFpHkpY3pbonk", QUICKNODE_URL),
         #("6DZLihLpHZW7kkaKLfR3qLbzj57N6MFsmCNrGvUXjups", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
-        ("FzPcmnQm5ijvF4BR4URbrAszMbcAMF6vaQSBUJb3bonk", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
+        ("87n4vtsy5CN7EzpFeeD25YtGfyJpUbqwDZtAzNFnNtRZ", f"https://rpc.helius.xyz/?api-key={HELIUS_API_KEY}"),
         #("ADSkaYVeTYazX77JypE7HEvRdx1QZVAo3whhCACjjups", QUICKNODE_URL),
     ]
     total_results = []

@@ -4,4 +4,4 @@ DEFAULT_RPC_URL = "https://api.mainnet-beta.solana.com/"
 QUICKNODE_URL = "https://polished-solemn-firefly.solana-mainnet.quiknode.pro/26707b2f961ba2e4b9b0c1ade401001b320358de/"
 WALLETS_PER_TOKEN = 1
 SOL_CHAIN_ID = "solana"
-WINDOW_HOURS = 0.25
+WINDOW_HOURS = 0.02

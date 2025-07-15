@@ -1,7 +1,5 @@
 import pandas as pd
 from typing import List, Dict, Optional
-from datetime import datetime
-from constants import HELIUS_API_KEY
 import os
 
 def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, verbose: bool = True):
@@ -10,11 +8,7 @@ def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, v
             print("No results to export.")
         return
 
-    # Auto-generate filename with timestamp if none provided
-    if not filename:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"pnl_results_{timestamp}.csv"
-
+    filename = "early_wallets.csv"
     # Normalize dictionaries in case of missing keys
     df = pd.json_normalize(results)
 
@@ -25,7 +19,7 @@ def export_results_to_csv(results: List[Dict], filename: Optional[str] = None, v
     
     # Use fixed output path
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    output_path = os.path.join(project_root, "data", "early_wallets.csv")
+    output_path = os.path.join(project_root, "data", filename)
     df.to_csv(output_path, index=False)
 
     if verbose:
