@@ -1,5 +1,12 @@
 # alpha
 
+This program finds early buyers on provided solana tokens. The goal is to try to find wallets with an edge on the market (eg inside info or highly skilled). These wallets change frequently so this program should be run on many coins weekly idealy. Consistent early buyers should then be looked further into manually (usually a very small pool of wallets). These wallets can be tracked or copied. You want to avoid KOL wallets, these can be found online. Often, the wallets found by this program are unknown by most people which is perfect, you dont want copy traders ruining the charts. I built this for personal use over a few weeks at the start of summer. So far, it has been very useful for me and has lead to many profitable trades.
+
+
+20/08
+Not updated this in a while since I've been away but program fully works now no issues fetching any reasonably recent token (old ones wont be relevant anyway), finding early buyers above x sol, calculating pnl on multiple transactions, and storing results in csv.
+
+
 03/07
 When there is a 10 or so minute gap between launch and migration where nothing has happened, especially since at the moment migration is such a low mc theres no much activity beforehand, the program may take a while to go through this period. This is important though to find the pre dex buyers with alpha. For the real thing, I suggest the window is extended massively and blocks are extensively searched, utilising the number of wallets per token limit rather than window cut off. The program will take a while to execute however this is not too important for now since accuracy of the data is vital
 
