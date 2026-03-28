@@ -1,96 +1,202 @@
-# alpha
+# Alpha – Solana Wallet Discovery Engine
 
-This program finds early buyers on provided solana tokens. The goal is to try to find wallets with an edge on the market (eg inside info or highly skilled). These wallets change frequently so this program should be run on many coins weekly idealy. Consistent early buyers should then be looked further into manually (usually a very small pool of wallets). These wallets can be tracked or copied. You want to avoid KOL wallets, these can be found online. Often, the wallets found by this program are unknown by most people which is perfect, you dont want copy traders ruining the charts. I built this for personal use over a few weeks at the start of summer. So far, it has been very useful for me and has lead to many profitable trades.
+## Overview
 
+**Alpha** is a data-driven tool designed to identify *early buyers* of newly launched Solana tokens. Its goal is to surface wallets that consistently enter positions early—potentially indicating informational or executional edge.
 
-20/08
-Not updated this in a while since I've been away but program fully works now no issues fetching any reasonably recent token (old ones wont be relevant anyway), finding early buyers above x sol, calculating pnl on multiple transactions, and storing results in csv.
+The tool automates the process of analysing on-chain activity to uncover high-signal wallets that can be further investigated, tracked, or used for strategy development.
 
+Built over several weeks for personal use, Alpha has already proven useful in identifying profitable trading opportunities over summer.
 
-03/07
-When there is a 10 or so minute gap between launch and migration where nothing has happened, especially since at the moment migration is such a low mc theres no much activity beforehand, the program may take a while to go through this period. This is important though to find the pre dex buyers with alpha. For the real thing, I suggest the window is extended massively and blocks are extensively searched, utilising the number of wallets per token limit rather than window cut off. The program will take a while to execute however this is not too important for now since accuracy of the data is vital
+---
 
-01/07
+## Key Features
+
+- **Early Buyer Detection**  
+  Identifies wallets interacting with a token shortly after launch using on-chain transaction data.
+
+- **PnL & ROI Calculation**  
+  Tracks wallet performance across multiple transactions within a defined time window.
+
+- **Multi-token Processing**  
+  Supports concurrent analysis of multiple tokens using multi-threading.
+
+- **Data Export**  
+  Outputs structured results into CSV for further analysis.
+
+- **Efficient API Usage**  
+  Optimised to minimise API credit usage while scanning high volumes of blocks.
+
+---
+
+## Technical Highlights
+
+- Parallel transaction processing (multi-threading)
+- Block-level scanning for precise early-entry detection
+- Filtering of failed transactions and low-signal activity
+- Designed for extensibility (wallet tracking, scoring, and classification)
+
+---
+
+## Limitations / Scope
+
+- Wallet scoring/classification system was **designed but not implemented**
+- Focus is currently on **early buyer discovery**, not automated trading
+
+---
+
+## Planned Improvements
+
+- Persist wallet and token data using SQLite  
+- Implement wallet classification system (e.g. Sniper, Insider, Whale)  
+- Introduce historical performance scoring (hit rate, ROI over time)  
+
+---
+
+## Development Log
+
+### 20/08
+Fully functional pipeline:
+- Fetches recent tokens reliably  
+- Identifies early buyers above threshold SOL  
+- Calculates PnL across multiple transactions  
+- Stores results in CSV  
+
+---
+
+### 03/07
+- Handles inactivity gaps between launch and migration  
+- Important for detecting pre-DEX buyers  
+- Accuracy prioritised over execution speed  
+- Suggestion: extend search window and rely on wallet limits rather than time cutoffs  
+
+---
+
+### 01/07
 ![image](https://github.com/user-attachments/assets/c2b5829b-a9cd-41d7-96a6-f2de1441090e)
-Now you just need the token address, no migration time or anything else. I ran 4 at once with 0.06 window and it didnt take long
-Also tested some edge cases where migration and launch were within the same minute and where a token was on a dex that tx didnt come up as swaps
-I had to remove the selection statements for that case and will fix at a later date since its causing some errors in the output as you can see -100% roi partially holding is because there were txs with the wallet and token in which fees were paid: 3PTxoyKhj4gLjWLd9GetfSHr3ZU6DyaUhpJmg9JGkPatmopsPXD9jctLpa8agV4S41EdhuyTHZbxrdjXq7TJvcJj. One was createIdempotent and another something else not too sure what these are but ill look into filtering in a different way.
-Next I need to automate fetching high volume/mc tokens on dex need to find an api
 
+- Simplified input: only token address required  
+- Tested multiple concurrent runs successfully  
+- Handled edge cases:
+  - Launch and migration occurring within the same minute  
+  - Tokens where transactions were not classified as swaps  
 
+**Known Issue:**  
+- Some transactions (e.g. `createIdempotent`, fee-related interactions) distort ROI calculations (e.g. -100% ROI when partially holding)  
+- Requires improved filtering logic  
 
-24/06
+**Next Step:**  
+- Automate fetching high-volume / high-MC tokens via API  
+
+---
+
+### 24/06
 ![image](https://github.com/user-attachments/assets/2af45433-0d4c-4ee4-989b-15f1ea9db637)
-Estimated launch time is no longer provided. Automatically finds launch time from given migration time
-(launch time cannot be fetched easily on solana)
-apis which fetch coins can easily get migration time
 
+- Launch time no longer manually required  
+- Automatically derived from migration time  
+- (Direct launch time retrieval is difficult on Solana)  
 
-23/06
+---
+
+### 23/06
 ![image](https://github.com/user-attachments/assets/4b7523fe-2a61-46e4-8775-53bdf51c2252)
 
-optimisation. 4x20
+- Initial optimisation work  
+- Parallel runs: 4 × 20 configuration  
 
+---
 
-20/06/25
+### 20/06/25
 ![image](https://github.com/user-attachments/assets/e9470efb-db04-4ea6-a0a2-de072adf2954)
 
-tested with 4 coins simultaneously with max 15 wallets for each so 60 wallets fetched in total
+- Tested with 4 tokens simultaneously  
+- Up to 15 wallets per token (60 wallets total)  
+- Data validated in CSV output  
 
-all data now correct in csv table
+**Performance:**
+- ~6 minutes runtime  
+- Scales efficiently with additional tokens due to multi-threading  
 
-whole program took about 6 minutes to run however this wont increase much with additional coins up to a certain amount due to multi threading
+---
 
-
-
-17/06
-Finds early transactions based on unix time on launch and token address both manually provided
-
-Filters out failed transactions and minimum sol exchanged filter
-
-Takes a while since it checks 100s of blocks for high volume tokens, however it uses minimal helius credits at the moment so its not a problem
-
-Next steps:
-
-automate fetching high volume recent tokens
-
-at some point in order to reduce processing time, the transaction checking needs to be ran in parallel for all tokens potentially using ThreadPoolExecutor
-
-calculate profit from these early buyers up to a "profit assessment point" at which point calculate unrealized profit and tag as a HODLER
-
-store data on wallets in sqlite such as:
-Tokens (metadata, launch time)
-Wallets + activity logs (transactions, timestamps, PnL)
-Wallet scores and tags (Hodler, Flipper, Whale, etc.)
-
-classify wallets
-
-introduce smart wallet history on stored wallets (check if lucky or degen sprayer)
-pull its SPL transaction history and score eg:
-For Wallet X:
-- 12 tokens entered early
-- 4 successful (>5x)
-- 8 failed/rugged
-- Hit Rate: 33%
-- Avg ROI: 2.4x
-tag these wallets now eg:
-- Sniper: >40% hit rate, >3x avg ROI
-- Sprayer: <20% hit rate, high volume
-- Insider: Appears only in high-win tokens, but low frequency
-- Luck: 1 big hit, otherwise losses
-Only check history from a certain window of time, i need to know whos winning now not who won 2 years ago
-
-
-19/06/2025
+### 19/06/2025
 ![image](https://github.com/user-attachments/assets/1517a9c7-d3f9-4050-8df7-7de5c4e4112e)
 
-Still some errors as you can see with average price and a few other things but other than that lots of progress made
+- Multi-token support implemented  
+- PnL calculated between configurable time windows  
+- CSV export working  
 
-Can run multiple provided coins at a time and get pnl from early buyers from point in time x up to point in time y
+**Notes:**
+- Some inaccuracies in average price and metrics  
+- Realised SOL calculation may need adjustment (cost basis not fully accounted for)  
 
-exports this data to csv file
+---
 
-utilising multiple platforms to run concurrently in order to prevent 429 on free plans
+### 17/06
+Initial implementation:
 
-edit: i think i may need to change stats that are calculated such as realised sol is not minusing original sol spent
+- Early transaction detection using:
+  - Token address  
+  - Launch time (manual input)  
+- Filtering:
+  - Failed transactions  
+  - Minimum SOL threshold  
 
+**Performance Notes:**
+- Scans hundreds of blocks for high-volume tokens  
+- Low API credit usage (Helius), so acceptable trade-off  
+
+---
+
+## Original Next Steps (Design Notes)
+
+- Automate fetching high-volume recent tokens  
+
+- Improve performance:
+  - Parallelise transaction processing across tokens  
+  - Potential use of `ThreadPoolExecutor`  
+
+- Profit analysis:
+  - Calculate profit up to a defined "assessment point"  
+  - Include unrealised profit and identify long-term holders  
+
+- Data storage (SQLite):
+  - Tokens (metadata, launch time)  
+  - Wallets (activity logs, transactions, timestamps, PnL)  
+  - Wallet scores and tags  
+
+---
+
+## Wallet Classification Concept (Planned)
+
+Example metrics for a wallet:
+
+- 12 tokens entered early  
+- 4 successful (>5x)  
+- 8 failed/rugged  
+- Hit Rate: 33%  
+- Avg ROI: 2.4x  
+
+Proposed classifications:
+
+- **Sniper** → >40% hit rate, >3x avg ROI  
+- **Sprayer** → <20% hit rate, high volume  
+- **Insider** → Appears only in high-performing tokens  
+- **Luck** → One major win, otherwise losses  
+
+Time-window filtering is important (focus on recent performance, not historical outliers).
+
+---
+
+## Summary
+
+Alpha demonstrates practical experience in:
+
+- Blockchain data processing (Solana)
+- Building data pipelines for noisy, real-world datasets
+- Performance analytics (PnL, ROI)
+- Concurrency and optimisation
+- Iterative system design and debugging
+
+The project reflects a strong focus on extracting actionable insights from on-chain data and solving real-world problems in a fast-moving environment.
